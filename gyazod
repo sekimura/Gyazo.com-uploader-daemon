@@ -10,8 +10,8 @@ use HTTP::Request::Common;
 use constant GYAZO_URL => 'http://gyazo.com/upload.cgi';
 
 GetOptions(
-	'debug|d=s' => \my $debug,
-	'dir=s'     => \my $dir,
+    'debug|d=s' => \my $debug,
+    'dir=s'     => \my $dir,
     'sleep=s'   => \my $sleep,
 );
 
@@ -39,7 +39,13 @@ sub upload {
         ];
     my $ua = LWP::UserAgent->new;
     my $res = $ua->request($req);
-    warn $res->content if $debug;
+    notify($res->content);
 }
 
+sub notify {
+   my ($url) = @_;
+   $url = sprintf(qq{<a href="%s">%s</a>}, $url, $url);
+   my @cmd = ('notify-send', 'gyazo', $url);
+   system(@cmd) == 0 or warn "Failed: $?";
+}
 
