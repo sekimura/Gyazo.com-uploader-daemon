@@ -1,0 +1,45 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+use Getopt::Long qw(:config no_ignore_case);
+use Linux::Inotify;
+use LWP::UserAgent;
+use HTTP::Request::Common;
+
+use constant GYAZO_URL => 'http://gyazo.com/upload.cgi';
+
+GetOptions(
+	'debug|d=s' => \my $debug,
+	'dir=s'     => \my $dir,
+    'sleep=s'   => \my $sleep,
+);
+
+$sleep ||= 1;
+
+my $notifier = Linux::Inotify->new();
+my $watch = $notifier->add_watch($dir, Linux::Inotify::CREATE);
+
+while(1) {
+    my @events = $notifier->read();
+    if (my $filename = $events[0]->fullname()) {
+        warn "filename $filename" if $debug;
+        upload($filename);
+    }
+    sleep($sleep);
+}
+
+sub upload {
+    my ($filename) = @_;
+    my $req = POST GYAZO_URL,
+        Content_Type => 'multipart/form-data',
+        Content => [
+            id => int(rand(1000000)),
+            imagedata => [$filename],
+        ];
+    my $ua = LWP::UserAgent->new;
+    my $res = $ua->request($req);
+    warn $res->content if $debug;
+}
+
+
